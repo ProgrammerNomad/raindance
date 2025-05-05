@@ -309,33 +309,6 @@ a.read-more.add-to-cart:hover {
     font-weight: bold !important;
     color: #333 !important;
 }
-
-#Paris.tabcontent {
-    display: none;
-    width: 100%;
-}
-
-#Paris.tabcontent[style*="display: block"] {
-    display: block !important;
-}
-
-#caleder {
-    margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-}
-
-.fc .fc-daygrid-day.fc-day-today {
-    background-color: rgba(57, 180, 166, 0.1) !important;
-}
-
-.fc .fc-daygrid-day-events {
-    margin-top: 0;
-}
-
-.fc-event {
-    cursor: pointer;
-}
 </style>
 
 
@@ -362,6 +335,13 @@ a.read-more.add-to-cart:hover {
   });
 </script>
 
+
+
+
+
+
+
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
    let selectElement = document.querySelector("select[name='product_date']");
@@ -371,79 +351,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedDate = urlParams.get('product_date');
-    
-    let initialDate = new Date();
-    if (selectedDate) {
-        const [year, month] = selectedDate.split('-');
-        initialDate = new Date(year, parseInt(month) - 1, 1);
-    }
 
-    const calendarEl = document.getElementById('caleder');
-    if (!calendarEl) return;
-
-    const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        initialDate: initialDate,
-        headerToolbar: {
-            left: '',
-            center: 'title',
-            right: ''
-        },
-        height: 'auto',
-        handleWindowResize: true,
-        windowResizeDelay: 200,
-        events: <?php 
-            $calendar_events = array();
-            if (!empty($products_array)) {
-                foreach ($products_array as $product) {
-                    if (!empty($product['course_start_date'])) {
-                        $date_object = DateTime::createFromFormat('y/m/d', $product['course_start_date']);
-                        if ($date_object) {
-                            $calendar_events[] = array(
-                                'title' => $product['title'],
-                                'start' => $date_object->format('Y-m-d'),
-                                'url' => $product['permalink'],
-                                'backgroundColor' => '#39b4a6',
-                                'borderColor' => '#39b4a6'
-                            );
-                        }
-                    }
-                }
-            }
-            echo json_encode($calendar_events);
-        ?>,
-        eventDidMount: function(info) {
-            console.log('Event mounted:', info.event.title); // Debug log
-        },
-        eventClick: function(info) {
-            if (info.event.url) {
-                window.location.href = info.event.url;
-                info.jsEvent.preventDefault();
-            }
-        }
-    });
-
-    calendar.render();
-    
-    // Force calendar to render properly
-    setTimeout(function() {
-        calendar.updateSize();
-    }, 200);
-
-    // Add resize observer
-    const resizeObserver = new ResizeObserver(entries => {
-        calendar.updateSize();
-    });
-    resizeObserver.observe(calendarEl);
-
-    // Debug log
-    console.log('Calendar events:', calendar.getEvents());
-});
-</script>
 
 <?php
 function custom_product_info_shortcode($atts) {
@@ -481,63 +389,47 @@ function custom_product_info_shortcode($atts) {
 
 // Query args
 $args = array(
-    'post_type'      => 'product',
-    'posts_per_page' => (int) $atts['count'],
-    'paged'          => $paged,
-    'orderby'        => 'date',
-    'order'          => 'DESC'
+   'post_type'      => 'product',
+   'posts_per_page' => $atts['count'],
+   'paged'          => $paged,
+   's'              => $search_query,
 );
 
-// Add the meta query for date filtering
-if (!empty($selected_date)) {
-    $date_parts = explode('-', $selected_date);
-    if (count($date_parts) === 2) {
-        $year = $date_parts[0];
-        $month = str_pad($date_parts[1], 2, '0', STR_PAD_LEFT);
-        
-        $meta_query[] = array(
-            'key'     => 'course_date_start',
-            'value'   => $year . $month,
-            'compare' => 'LIKE'
-        );
-        
-        $args['meta_query'] = $meta_query;
-    }
-}
 
-// Add category filter if selected
-if (!empty($selected_category)) {
-    $args['tax_query'][] = array(
-        'taxonomy' => 'product_cat',
-        'field'    => 'slug',
-        'terms'    => $selected_category
+    $args = array(
+        'post_type'      => 'product',
+        'posts_per_page' => (int) $atts['count'],
+        'paged'          => $paged,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'meta_query'     => $meta_query,
     );
-}
 
-// Add location filter if selected
-if (!empty($selected_location)) {
-    if (!isset($args['tax_query'])) {
-        $args['tax_query'] = array();
-    }
-    $args['tax_query'][] = array(
-        'taxonomy' => 'course_locations',
-        'field'    => 'name',
-        'terms'    => $selected_location,
-        'operator' => 'IN'
-    );
-}
 
-// Add search query if present
-if (!empty($search_query)) {
-    $args['s'] = $search_query;
-}
+    if (!empty($selected_category)) {
+      $args['tax_query'][] = array(
+         'taxonomy' => 'product_cat',
+         'field'    => 'slug',
+         'terms'    => $selected_category
+      );
+   }
+
+   if (!empty($selected_location)) {
+      $args['tax_query'] = array(
+         array(
+            'taxonomy' => 'course_locations',
+            'field'    => 'name',
+            'terms'    => $selected_location,
+            'operator' => 'IN'
+         ),
+      );
+   }
 
     $query = new WP_Query($args);
 
     // Initialize the products array
     $products_array = array();
 
-    // Move this code block before the calendar initialization
     if ($query->have_posts()) {
         while ($query->have_posts()) {
             $query->the_post();
@@ -551,8 +443,6 @@ if (!empty($search_query)) {
                 $date_object = DateTime::createFromFormat('y/m/d', $course_start_date);
                 if ($date_object) {
                     $formatted_date = $date_object->format('d F Y');
-                    // Also store the Y-m-d format for calendar
-                    $calendar_date = $date_object->format('Y-m-d');
                 }
             }
 
@@ -567,11 +457,11 @@ if (!empty($search_query)) {
                 'formatted_price' => wc_price($product->get_price()),
                 'course_start_date' => $course_start_date,
                 'formatted_course_date' => $formatted_date,
-                'calendar_date' => isset($calendar_date) ? $calendar_date : '',
                 'add_to_cart_url' => $product->add_to_cart_url()
             );
         }
         wp_reset_postdata();
+        $query->rewind_posts();
     }
 
     ob_start();
@@ -660,7 +550,7 @@ if (!empty($search_query)) {
          <div class="tab">
   <button class="tablinks course-toggle" onclick="openCity(event, 'London')">Courses</button>
   <button class="tablinks" onclick="openCity(event, 'Paris')">
-   Calendar
+   Calender
   </button>
 </div>
 
@@ -714,63 +604,59 @@ if (!empty($search_query)) {
 </div>
 
 <div id="Paris" class="tabcontent">
-    <div id="caleder" style="min-height: 600px;"></div>
+    <div id="caleder"></div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the selected date from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedDate = urlParams.get('product_date');
+        
+        // Parse the year and month
+        let initialDate = new Date();
+        if (selectedDate) {
+            const [year, month] = selectedDate.split('-');
+            initialDate = new Date(year, parseInt(month) - 1, 1);
+        }
+
+        const calendarEl = document.getElementById('caleder');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            initialDate: initialDate,
+            headerToolbar: {
+                left: '',
+                center: 'title',
+                right: ''
+            },
+            events: <?php 
+                // Convert your products array to calendar events
+                $calendar_events = array();
+                if (!empty($products_array)) {
+                    foreach ($products_array as $product) {
+                        if (!empty($product['course_start_date'])) {
+                            $date_object = DateTime::createFromFormat('y/m/d', $product['course_start_date']);
+                            if ($date_object) {
+                                $calendar_events[] = array(
+                                    'title' => $product['title'],
+                                    'start' => $date_object->format('Y-m-d'),
+                                    'url' => $product['permalink']
+                                );
+                            }
+                        }
+                    }
+                }
+                echo json_encode($calendar_events);
+            ?>,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault();
+                }
+            }
+        });
+        calendar.render();
+    });
+    </script>
 </div>
-
-<style>
-.tabcontent {
-    display: none;
-    padding: 6px 0px;
-    border-top: none;
-    width: 100%; /* Ensure full width */
-}
-
-#caleder {
-    max-width: 100%; /* Change from fixed width to max-width */
-    margin: 0 auto;
-    padding: 20px;
-    height: auto !important; /* Force height to auto */
-    min-height: 600px; /* Minimum height to ensure visibility */
-}
-
-/* Responsive calendar styles */
-@media screen and (max-width: 768px) {
-    #caleder {
-        padding: 10px;
-        min-height: 400px;
-    }
-    
-    .fc .fc-toolbar {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .fc .fc-toolbar-title {
-        font-size: 1.2em !important;
-    }
-    
-    .fc-event {
-        font-size: 12px !important;
-    }
-}
-
-/* Force calendar to be visible when tab is active */
-#Paris.tabcontent[style*="display: block"] #caleder {
-    display: block !important;
-    visibility: visible !important;
-}
-
-/* Ensure proper calendar dimensions */
-.fc {
-    height: 100% !important;
-    min-height: inherit;
-}
-
-.fc-view-harness {
-    height: auto !important;
-    min-height: 400px;
-}
-</style>
 
 <script>
 function openCity(evt, cityName) {
@@ -792,17 +678,6 @@ function openCity(evt, cityName) {
 
   // Save selected tab in localStorage
   localStorage.setItem("activeTab", cityName);
-
-  // Add this after showing the tab
-  if (cityName === 'Paris') {
-      const calendar = document.querySelector('#caleder');
-      if (calendar) {
-          const fullCalendarApi = calendar.fullCalendar;
-          if (fullCalendarApi) {
-              fullCalendarApi.updateSize();
-          }
-      }
-  }
 }
 
 // Run this on page load
