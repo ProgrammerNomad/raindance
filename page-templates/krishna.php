@@ -335,13 +335,6 @@ a.read-more.add-to-cart:hover {
   });
 </script>
 
-
-
-
-
-
-
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
    let selectElement = document.querySelector("select[name='product_date']");
@@ -351,7 +344,102 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+<script>
+function openCity(evt, cityName) {
+  // Hide all tab contents
+  const tabcontent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
 
+  // Remove 'active' class from all tablinks
+  const tablinks = document.getElementsByClassName("tablinks");
+  for (let i = 0; i < tablinks.length; i++) {
+    tablinks[i].classList.remove("active");
+  }
+
+  // Show current tab and add 'active' class
+  document.getElementById(cityName).style.display = "block";
+  evt.currentTarget.classList.add("active");
+
+  // Save selected tab in localStorage
+  localStorage.setItem("activeTab", cityName);
+
+  // Add this after showing the current tab
+  if (cityName === 'Paris') {
+    setTimeout(function() {
+      const calendarEl = document.getElementById('caleder');
+      if (calendarEl) {
+        const calendar = calendarEl._fullCalendar;
+        if (calendar) {
+          calendar.updateSize();
+          calendar.render();
+        }
+      }
+    }, 100);
+  }
+}
+
+// Run this on page load
+document.addEventListener("DOMContentLoaded", function() {
+  const activeTab = localStorage.getItem("activeTab") || "London"; // Default to 'London'
+  const defaultTabButton = document.querySelector(`.tablinks[onclick*="${activeTab}"]`);
+
+  if (defaultTabButton) {
+    defaultTabButton.click(); // Trigger the click to open tab
+  }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('caleder');
+    if (!calendarEl) return;
+
+    // Get the selected date from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDate = urlParams.get('product_date');
+    
+    let initialDate = new Date();
+    if (selectedDate) {
+        const [year, month] = selectedDate.split('-');
+        initialDate = new Date(year, parseInt(month) - 1, 1);
+    }
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        // ...existing calendar options...
+    });
+
+    // Store calendar instance on the element
+    calendarEl._fullCalendar = calendar;
+
+    // Initial render
+    calendar.render();
+
+    // Add resize observer
+    const resizeObserver = new ResizeObserver(() => {
+        if (document.getElementById('Paris').style.display === 'block') {
+            calendar.updateSize();
+        }
+    });
+    
+    resizeObserver.observe(calendarEl);
+
+    // Force render when tab becomes visible
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.target.style.display === 'block') {
+                setTimeout(() => calendar.updateSize(), 100);
+            }
+        });
+    });
+
+    observer.observe(document.getElementById('Paris'), {
+        attributes: true,
+        attributeFilter: ['style']
+    });
+});
+</script>
 
 <?php
 function custom_product_info_shortcode($atts) {
@@ -657,39 +745,6 @@ $args = array(
     });
     </script>
 </div>
-
-<script>
-function openCity(evt, cityName) {
-  // Hide all tab contents
-  const tabcontent = document.getElementsByClassName("tabcontent");
-  for (let i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
-  }
-
-  // Remove 'active' class from all tablinks
-  const tablinks = document.getElementsByClassName("tablinks");
-  for (let i = 0; i < tablinks.length; i++) {
-    tablinks[i].classList.remove("active");
-  }
-
-  // Show current tab and add 'active' class
-  document.getElementById(cityName).style.display = "block";
-  evt.currentTarget.classList.add("active");
-
-  // Save selected tab in localStorage
-  localStorage.setItem("activeTab", cityName);
-}
-
-// Run this on page load
-document.addEventListener("DOMContentLoaded", function() {
-  const activeTab = localStorage.getItem("activeTab") || "London"; // Default to 'London'
-  const defaultTabButton = document.querySelector(`.tablinks[onclick*="${activeTab}"]`);
-
-  if (defaultTabButton) {
-    defaultTabButton.click(); // Trigger the click to open tab
-  }
-});
-</script>
 
 <style>
 
