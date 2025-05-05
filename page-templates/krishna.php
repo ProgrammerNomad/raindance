@@ -272,42 +272,12 @@ a.read-more.add-to-cart:hover {
   opacity: 1;
   transform: translateY(0);
 }
-.product-date {
-  font-size: 0; /* hides the outer text */
-}
 
 .product-date .converted-date {
   font-size: 16px; /* reset size for visible text */
   display: inline-block;
 }
 </style>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    document.querySelectorAll(".product-date").forEach(function (el) {
-        const dateText = el.textContent.trim();
-        const parts = dateText.split("/");
-
-        if (parts.length === 3) {
-            const day = parseInt(parts[2], 10);      // use 'yy' as day
-            const month = parseInt(parts[1], 10) - 1; // month is 0-based
-            const year = 2025;                        // always fixed to 2025
-
-            const formattedDate = `${day} ${monthNames[month]} ${year}`;
-
-            const newDateEl = document.createElement("div");
-            newDateEl.className = "converted-date";
-            newDateEl.textContent = formattedDate;
-
-            el.appendChild(newDateEl);
-        }
-    });
-});
-</script>
 
 
 <script>
@@ -423,11 +393,44 @@ $args = array(
       );
    }
 
-
-
-
-
     $query = new WP_Query($args);
+
+    // Initialize the products array
+    $products_array = array();
+
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+            $product = wc_get_product(get_the_ID());
+            if (!$product) continue;
+
+            // Get and format the course date
+            $course_start_date = get_field('course_date_start', get_the_ID());
+            $formatted_date = '';
+            if ($course_start_date) {
+                $date_object = DateTime::createFromFormat('y/m/d', $course_start_date);
+                if ($date_object) {
+                    $formatted_date = $date_object->format('d F Y');
+                }
+            }
+
+            // Store product data in array
+            $products_array[] = array(
+                'id' => get_the_ID(),
+                'title' => get_the_title(),
+                'permalink' => get_permalink(),
+                'image_url' => get_the_post_thumbnail_url(get_the_ID(), 'medium'),
+                'new_label' => strtolower(get_post_meta(get_the_ID(), 'new-lable', true)) === 'new',
+                'price' => $product->get_price(),
+                'formatted_price' => wc_price($product->get_price()),
+                'course_start_date' => $course_start_date,
+                'formatted_course_date' => $formatted_date,
+                'add_to_cart_url' => $product->add_to_cart_url()
+            );
+        }
+        wp_reset_postdata();
+        $query->rewind_posts();
+    }
 
     ob_start();
     ?>
@@ -514,7 +517,9 @@ $args = array(
 
          <div class="tab">
   <button class="tablinks course-toggle" onclick="openCity(event, 'London')">Courses</button>
-  <button class="tablinks" onclick="openCity(event, 'Paris')">Calendar</button>
+  <button class="tablinks" onclick="openCity(event, 'Paris')">
+   
+  </button>
 </div>
 
 <div id="London" class="tabcontent">
@@ -543,13 +548,14 @@ $args = array(
                         <?php
                         $course_start_date = get_field('course_date_start', get_the_ID());
                         if ($course_start_date) {
-                            if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $course_start_date, $matches)) {
-                                $formatted_date = sprintf('%s/%s/%s', $matches[3], $matches[2], $matches[1]);
+                            // Convert the date to the desired format
+                            $date_object = DateTime::createFromFormat('y/m/d', $course_start_date);
+                            if ($date_object) {
+                                // Swap the year and day
+                                $formatted_date = $date_object->format('d F Y');
                                 echo '<div class="product-date">' . esc_html($formatted_date) . '</div>';
-                            } elseif (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $course_start_date)) {
-                                echo '<div class="product-date">' . esc_html($course_start_date) . '</div>';
                             } else {
-                                echo '<div class="product-date">' . esc_html($course_start_date) . '</div>';
+                                echo '<div class="product-date">Invalid date format</div>';
                             }
                         }
                         ?>
@@ -566,8 +572,7 @@ $args = array(
 </div>
 
 <div id="Paris" class="tabcontent">
-  <h3>Paris</h3>
-  <p>Paris is the capital of France.</p> 
+  <div id="caleder"></div>
 </div>
 
 <script>
