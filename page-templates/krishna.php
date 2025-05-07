@@ -95,20 +95,15 @@ if ($query->have_posts()) {
         if (!$product) continue;
 
         $course_start_date = get_field('course_date_start', get_the_ID());
-        if ($course_start_date && strlen($course_start_date) === 8 && is_numeric($course_start_date)) {
-            $year = substr($course_start_date, 2, 2);
-            $month = substr($course_start_date, 4, 2);
-            $day = substr($course_start_date, 6, 2);
-            $course_start_date = $year . '/' . $month . '/' . $day;
-        }
 
-        echo '<!-- Start Date: ' . $course_start_date . '-->';
+        echo '<!-- Debugging: Course Start Date:' . $course_start_date . '-->';
+
         $formatted_date = '';
         if ($course_start_date) {
-            $date_object = DateTime::createFromFormat('y/m/d', $course_start_date);
+            $date_object = DateTime::createFromFormat('Y-m-d', $course_start_date);
             if ($date_object) {
                 $formatted_date = $date_object->format('d F Y');
-                $calendar_date = $date_object->format('Y-m-d');
+                $calendar_date = $course_start_date; // Already in YYYY-MM-DD format
             }
         }
 
