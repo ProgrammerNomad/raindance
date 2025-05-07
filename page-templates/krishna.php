@@ -64,11 +64,13 @@ if (!empty($selected_location)) {
     );
 }
 
+// Modify the $args array to include meta sorting
 $args = array(
     'post_type'      => 'product',
     'posts_per_page' => (int) $atts['count'],
     'paged'          => $paged,
-    'orderby'        => 'date',
+    'orderby'        => 'meta_value',
+    'meta_key'       => 'course_date_start',
     'order'          => 'DESC',
     'meta_query'     => $meta_query,
     'tax_query'      => !empty($tax_query) ? $tax_query : array()
