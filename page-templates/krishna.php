@@ -212,6 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <div class="course-filter-container">
+    <div class="container">
     <form method="GET" action="<?php echo esc_url(get_permalink()); ?>" id="product-filter-form">
         <select name="product_date" onchange="this.form.submit()">
             <option value="">Select Date</option>
@@ -268,11 +269,12 @@ document.addEventListener("DOMContentLoaded", function () {
         <button class="filter-button button1" type="submit">Search</button>
     </form>
 </div>
-
+        </div>
+        <div class="container">
 <div class="tabs-container">
     <ul class="tabs">
-        <li class="tab-item active" data-tab="courses">Courses</li>
-        <li class="tab-item" data-tab="calendar">Calendar</li>
+        <li class="tab-item active" data-tab="courses" id="tab-09">Courses</li>
+        <li class="tab-item" data-tab="calendar" id="tab-10">Calendar</li>
     </ul>
     <div class="tab-content" id="courses">
         <div class="product-list">
@@ -354,7 +356,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
     </div>
 </div>
-
+ </div>
 <?php
 get_footer();
 ?>
