@@ -22,7 +22,7 @@ $atts = shortcode_atts(array(
 
 $selected_date = isset($_GET['product_date']) ? sanitize_text_field($_GET['product_date']) : '';
 $selected_category = isset($_GET['product_category']) ? sanitize_text_field($_GET['product_category']) : '';
-$search_query = isset($_GET['product_search']) ? sanitize_text_field($_GET['product_search']) : '';
+$search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 $selected_location = isset($_GET['product_location']) ? sanitize_text_field($_GET['product_location']) : '';
 $meta_query = array();
 
@@ -48,7 +48,14 @@ $args = array(
     'orderby'        => 'date',
     'order'          => 'DESC',
     'meta_query'     => $meta_query,
+    'tax_query'      => !empty($tax_query) ? $tax_query : '',
 );
+
+// Add search functionality for product titles
+if (!empty($search_query)) {
+    $args['s'] = $search_query; // Use WordPress's native search
+    $args['post_title_like'] = $search_query; // Custom search for titles
+}
 
 if (!empty($selected_category)) {
     $args['tax_query'][] = array(
@@ -243,7 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ?>
         </select>
 
-        <input type="text" name="product_search" placeholder="Search products" value="<?php echo esc_attr($search_query); ?>">
+        <input type="text" name="s" placeholder="Search products" value="<?php echo esc_attr($search_query); ?>">
 
         <button class="filter-button button1" type="submit">Search</button>
     </form>
