@@ -41,6 +41,29 @@ if (!empty($selected_date)) {
 
 $paged = (get_query_var('paged')) ? get_query_var('paged') : (get_query_var('page') ? get_query_var('page') : 1);
 
+$tax_query = array();
+
+if (!empty($selected_category) || !empty($selected_location)) {
+    $tax_query['relation'] = 'AND';
+}
+
+if (!empty($selected_category)) {
+    $tax_query[] = array(
+        'taxonomy' => 'product_cat',
+        'field'    => 'slug',
+        'terms'    => $selected_category
+    );
+}
+
+if (!empty($selected_location)) {
+    $tax_query[] = array(
+        'taxonomy' => 'course_locations',
+        'field'    => 'name',
+        'terms'    => $selected_location,
+        'operator' => 'IN'
+    );
+}
+
 $args = array(
     'post_type'      => 'product',
     'posts_per_page' => (int) $atts['count'],
@@ -48,7 +71,7 @@ $args = array(
     'orderby'        => 'date',
     'order'          => 'DESC',
     'meta_query'     => $meta_query,
-    'tax_query'      => !empty($tax_query) ? $tax_query : '',
+    'tax_query'      => !empty($tax_query) ? $tax_query : array()
 );
 
 // Add custom title search
@@ -61,23 +84,6 @@ if (!empty($search_query)) {
         );
         return $where;
     });
-}
-
-if (!empty($selected_category)) {
-    $args['tax_query'][] = array(
-        'taxonomy' => 'product_cat',
-        'field'    => 'slug',
-        'terms'    => $selected_category
-    );
-}
-
-if (!empty($selected_location)) {
-    $args['tax_query'][] = array(
-        'taxonomy' => 'course_locations',
-        'field'    => 'name',
-        'terms'    => $selected_location,
-        'operator' => 'IN'
-    );
 }
 
 $query = new WP_Query($args);
