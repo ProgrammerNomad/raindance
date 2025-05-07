@@ -89,6 +89,14 @@ if ($query->have_posts()) {
         if (!$product) continue;
 
         $course_start_date = get_field('course_date_start', get_the_ID());
+        if ($course_start_date && strlen($course_start_date) === 8 && is_numeric($course_start_date)) {
+            $year = substr($course_start_date, 2, 2);    // Get '25' from '20250519'
+            $month = substr($course_start_date, 4, 2);   // Get '05' from '20250519'
+            $day = substr($course_start_date, 6, 2);     // Get '19' from '20250519'
+            $course_start_date = $year . '/' . $month . '/' . $day;
+        }
+
+        echo '<!-- Start Date: ' . $course_start_date . '-->';
         $formatted_date = '';
         if ($course_start_date) {
             $date_object = DateTime::createFromFormat('y/m/d', $course_start_date);
