@@ -22,7 +22,7 @@ $atts = shortcode_atts(array(
 
 $selected_date = isset($_GET['product_date']) ? sanitize_text_field($_GET['product_date']) : '';
 $selected_category = isset($_GET['product_category']) ? sanitize_text_field($_GET['product_category']) : '';
-$search_query = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+$search_query = isset($_GET['product_search']) ? sanitize_text_field($_GET['product_search']) : '';
 $selected_location = isset($_GET['product_location']) ? sanitize_text_field($_GET['product_location']) : '';
 $meta_query = array();
 
@@ -51,10 +51,16 @@ $args = array(
     'tax_query'      => !empty($tax_query) ? $tax_query : '',
 );
 
-// Add search functionality for product titles
+// Add custom title search
 if (!empty($search_query)) {
-    $args['s'] = $search_query; // Use WordPress's native search
-    $args['post_title_like'] = $search_query; // Custom search for titles
+    add_filter('posts_where', function($where) use ($search_query) {
+        global $wpdb;
+        $where .= $wpdb->prepare(
+            " AND {$wpdb->posts}.post_title LIKE %s",
+            '%' . $wpdb->esc_like($search_query) . '%'
+        );
+        return $where;
+    });
 }
 
 if (!empty($selected_category)) {
@@ -107,13 +113,6 @@ if ($query->have_posts()) {
         );
     }
     wp_reset_postdata();
-}
-
-// Filter products based on the search query
-if (!empty($search_query)) {
-    $products_array = array_filter($products_array, function ($product) use ($search_query) {
-        return stripos($product['title'], $search_query) !== false; // Case-insensitive search
-    });
 }
 ?>
 
@@ -250,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ?>
         </select>
 
-        <input type="text" name="s" placeholder="Search products" value="<?php echo esc_attr($search_query); ?>">
+        <input type="text" name="product_search" placeholder="Search products" value="<?php echo esc_attr($search_query); ?>">
 
         <button class="filter-button button1" type="submit">Search</button>
     </form>
@@ -298,6 +297,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 'format' => '?paged=%#%',
                 'prev_text' => __('&laquo; Previous'),
                 'next_text' => __('Next &raquo;'),
+                'add_args' => array(
+                    'product_search' => $search_query
+                )
             ));
             ?>
         </div>
